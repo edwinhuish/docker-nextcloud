@@ -1,0 +1,64 @@
+version: '3'
+
+networks:
+  default:
+    external: false
+
+services:
+  nextcloud:
+    container_name: nextcloud_web
+    restart: always
+    build:
+      context: ./nextcloud-builder
+    depends_on:
+      - mariadb           # If using MySQL
+      - redis             # If using Redis
+    environment:
+      - UID=1000
+      - GID=100
+      - UPLOAD_MAX_SIZE=10G
+      - APC_SHM_SIZE=128M
+      - OPCACHE_MEM_SIZE=128
+      - CRON_PERIOD=15m
+      - TZ=Asia/Shanghai
+      - DOMAIN=localhost
+      - DB_TYPE=mysql
+      - DB_NAME=nextcloud
+      - DB_USER=nextcloud
+      - DB_PASSWORD=nextclouddbpass
+      - DB_HOST=mariadb
+    volumes:
+      - /docker/nextcloud/data:/data
+      - /docker/nextcloud/config:/config
+      - /docker/nextcloud/apps:/apps2
+      - /docker/nextcloud/themes:/nextcloud/themes
+      - /docker/nextcloud/external-data:/mnt/external-data
+    ports: 
+      - 8100:8888
+    networks:
+      - default
+
+  # If using MySQL
+  mariadb:
+    image: mariadb
+    container_name: nextcloud_db
+    restart: always
+    volumes:
+      - /docker/nextcloud/db:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=nextclouddbpass
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=nextcloud
+      - MYSQL_PASSWORD=nextclouddbpass
+    networks:
+      - default
+
+  # If using Redis
+  redis:
+    image: redis:alpine
+    container_name: nextcloud_redis
+    restart: always
+    volumes:
+      - /docker/nextcloud/redis:/data
+    networks:
+      - default
